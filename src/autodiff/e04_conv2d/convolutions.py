@@ -76,6 +76,18 @@ def conv2d_transpose(
 
     big = np.zeros([batch_size, nb_channels_big, big_size_0, big_size_1])
 
+    return conv2d_transpose_numba(kernel, small, big, stride)
+
+
+@numba.njit()
+def conv2d_transpose_numba(
+    kernel: np.ndarray, small: np.ndarray, big: np.ndarray, stride
+):
+    (kernel_size_0, kernel_size_1, nb_channels_big, nb_channels_small) = kernel.shape
+    (batch_size, nb_channels, small_size_0, small_size_1) = small.shape
+
+    big_size_0, big_size_1 = big.shape[2], big.shape[3]
+
     for b in range(batch_size):
         for j0 in range(big_size_0):
             for j1 in range(big_size_1):
@@ -89,11 +101,6 @@ def conv2d_transpose(
                     min(j1 // stride + 1, (big_size_1 - kernel_size_1 + 1) // stride)
                     + 1
                 )
-
-                # i0_start = 0
-                # i1_start = 0
-                # i0_end = small_size_0
-                # i1_end = small_size_1
 
                 for i0 in range(i0_start, i0_end):
                     for i1 in range(i1_start, i1_end):
