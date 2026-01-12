@@ -43,6 +43,21 @@ class Add(Op):
         return self.left.eval() + self.right.eval()
 
 
+class Sub(Op):
+    def __init__(self, left: Op, right: Op):
+        self.left = left
+        self.right = right
+
+    def __repr__(self):
+        return f"({self.left} - {self.right})"
+
+    def diff(self):
+        return Sub(self.left.diff(), self.right.diff())
+
+    def eval(self):
+        return self.left.eval() - self.right.eval()
+
+
 class Mul(Op):
     def __init__(self, left: Op, right: Op):
         self.left = left
