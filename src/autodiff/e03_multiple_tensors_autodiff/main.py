@@ -107,6 +107,26 @@ class Mul(Linear):
         )
 
 
+class Matrix(Linear):
+    @staticmethod
+    def operation(input: Op, matrix: Op) -> Op:
+        """_summary_
+            input (Op): tensor with shape (batch_size, nb_channels_input,...)
+            matrix (Op): matrix with shape (nb_channels_output, nb_channels_input)
+        Returns:
+            Op: out(b, j, ...) = sum over i of matrix(j, i) * input(b, i, ...)
+        """
+        return np.einsum("bi...,ji->bj...")
+
+    def __init__(self, left: Op, right: Op):
+        super().__init__(
+            repr=lambda l, r: f"({l} ° {r})",
+            left=left,
+            right=right,
+            operation=self.operation,
+        )
+
+
 class MatMul(Linear):
     def __init__(self, left: Op, right: Op):
         def repr(a, b):

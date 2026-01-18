@@ -116,17 +116,20 @@ class MatMul(Linear):
             repr=repr,
             left=left,
             right=right,
-            operation=lambda l, r: l @ r,
+            operation=lambda left_operand, right_operand: left_operand @ right_operand,
         )
 
 
 class Conv2D(Linear):
-    def __init__(self, input: Op, kernel: Op, stride: int = 1):
+    def __init__(
+        self, input_right: Op | None, input_left: Op | None, kernel: Op, stride: int = 1
+    ):
         """
         2d convolution operation with given stride
-        Only supports valid padding and single channel for now
+        Only supports valid as padding mode
         """
-        self.input = input
+        self.input_left = input_left
+        self.input_right = input_right
         self.kernel = kernel
         self.stride = stride
 

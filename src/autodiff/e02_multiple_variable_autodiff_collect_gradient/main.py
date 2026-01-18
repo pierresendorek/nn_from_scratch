@@ -19,7 +19,7 @@ class Op:
         return Mul(self, other)
 
     def __sub__(self, other: "Op"):
-        return Add(self, Mul(other, Variable("minus_one", value=-1.0, derivable=False)))
+        return Sub(self, other)
 
 
 class Delta(Op):

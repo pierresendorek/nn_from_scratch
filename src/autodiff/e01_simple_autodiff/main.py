@@ -2,7 +2,7 @@ class Op:
     def eval(self):
         raise NotImplementedError("Subclasses should implement this method.")
 
-    def diff(self):
+    def diff(self) -> "Op":
         raise NotImplementedError("Subclasses should implement this method.")
 
 
@@ -26,6 +26,8 @@ class Variable(Op):
             return Variable(name="constant", value=1.0, derivable=False)
         else:
             return Variable(name="", value=0.0, derivable=False)
+        
+            
 
 
 class Add(Op):
@@ -79,6 +81,8 @@ if __name__ == "__main__":
     C = Variable(name="C", value=2.0, derivable=False)
 
     expr = Mul(Add(x, C), x)  # (x + C) * x
+    
+    
     print(f"Expression: {expr}")
     print(f"Evaluated: {expr.eval()}")
     print(f"Derivative: {expr.diff()}")  # should be 1 * x + (x + C) * 1 = 2x + C
