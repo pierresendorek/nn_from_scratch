@@ -1,6 +1,6 @@
-from main import Variable, Add, Mul, Sub, Op
-import numpy as np
 import matplotlib.pyplot as plt
+import numpy as np
+from main import Add, Mul, Op, Sub, Variable
 
 
 def square(x: Variable) -> Variable:
@@ -15,7 +15,7 @@ def sum(elements: list[Op]) -> Op:
 
 
 if __name__ == "__main__":
-    # Define the variable x
+    # Define the variables to estimate
     a = Variable(name="a", value=0.0, derivable=True)
     b = Variable(name="b", value=0.0, derivable=True)
     c = Variable(name="c", value=0.0, derivable=True)
@@ -28,27 +28,54 @@ if __name__ == "__main__":
     print(model(1.0, a, b, c))
 
     # generating data to fit
-    x_true = np.arange(-5.0, 5.0, 1)
-    y_true = 3 * x_true**2 - 5 * x_true + 10 + np.random.randn(*x_true.shape)
+    x_ = np.arange(-5.0, 5.0, 1)
+
+    a_true = 3.0
+    b_true = -5.0
+    c_true = 10.0
+
+    y_true = a_true * x_**2 + b_true * x_ + c_true
+    y_true = y_true + np.random.randn(*x_.shape)
 
     # plt.plot(y_true)
     # plt.show()
 
-    expr = Variable(name="zero", value=0.0, derivable=False)
-    partial_losses = []
-    for xt, yt in zip(x_true, y_true):
-        Yt = Variable(name="yt", value=yt, derivable=False)
+    # expr = Variable(name="zero", value=0.0, derivable=False)
+    learning_rate = 1e-5
 
-        partial_loss = square(Sub(Yt, model(xt, a, b, c)))
-        partial_losses.append(partial_loss)
+    for iteration in range(10**6):
+        partial_losses = []
+        for xt, yt in zip(x_, y_true):
+            Yt = Variable(name="yt", value=yt, derivable=False)
 
-    loss = sum(partial_losses)
+            partial_loss = square(Sub(Yt, model(xt, a, b, c)))
+            partial_losses.append(partial_loss)
 
-    print("======= LOSS ==========")
-    print(loss)
-    print(loss.eval())
-    print("======= DERIVATIVE OF LOSS ==========")
-    print(loss.diff())
+        loss = sum(partial_losses)
+
+        # print("======= LOSS ==========")
+        # print(loss)
+        # print(loss.eval())
+        # print("======= DERIVATIVE OF LOSS ==========")
+        # print(loss.diff())
+
+        diff = loss.diff()
+
+        a.value -= learning_rate * diff.eval(perturbed_variable=a)
+        b.value -= learning_rate * diff.eval(perturbed_variable=b)
+        c.value -= learning_rate * diff.eval(perturbed_variable=c)
+
+        if iteration % 100 == 0:
+            print(
+                "loss = ",
+                loss.eval(),
+                "\ta =",
+                a.value,
+                "\tb =",
+                b.value,
+                "\tc =",
+                c.value,
+            )
 
     # expr = square()
 

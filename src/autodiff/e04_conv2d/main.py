@@ -1,6 +1,9 @@
 from collections import defaultdict
 from math import exp
+
 import numpy as np
+
+from .convolutions import conv2d, conv2d_transpose
 
 
 class Op:
@@ -40,6 +43,32 @@ class Delta(Op):
 
 
 class Linear(Op):
+    def __init__(self, repr: callable, arg: Op, operation: callable):
+        self.operation = operation
+        self.repr = repr
+        self.arg = arg
+
+    def __repr__(self):
+        return self.repr(self.arg)
+
+    def eval(self, perturbed_variable: Delta):
+        arg_eval = self.arg.eval(perturbed_variable)
+        return self.operation(arg_eval)
+    
+    def diff(self):
+        arg_diff = self.arg.diff()
+
+        if is_zero(arg_diff):
+            return Variable(name="zero", value=0.0, derivable=False)
+
+        return Linear(
+            repr=self.repr,
+            arg=arg_diff,
+            operation=self.operation,
+        )
+
+
+class Bilinear(Op):
     def __init__(self, repr: callable, left: Op, right: Op, operation: callable):
         self.operation = operation
         self.repr = repr
@@ -66,7 +95,7 @@ class Linear(Op):
             return Variable(name="zero", value=0.0, derivable=False)
 
         if is_zero(left_diff):
-            return Linear(
+            return Bilinear(
                 repr=self.repr,
                 left=self.left,
                 right=right_diff,
@@ -74,7 +103,7 @@ class Linear(Op):
             )
 
         if is_zero(right_diff):
-            Linear(
+            Bilinear(
                 repr=self.repr,
                 left=left_diff,
                 right=self.right,
@@ -82,13 +111,13 @@ class Linear(Op):
             )
 
         return Add(
-            Linear(
+            Bilinear(
                 repr=self.repr,
                 left=left_diff,
                 right=self.right,
                 operation=self.operation,
             ),
-            Linear(
+            Bilinear(
                 repr=self.repr,
                 left=self.left,
                 right=right_diff,
@@ -97,7 +126,7 @@ class Linear(Op):
         )
 
 
-class Mul(Linear):
+class Mul(Bilinear):
     def __init__(self, left: Op, right: Op):
         super().__init__(
             repr=lambda l, r: f"({l} . {r})",
@@ -107,7 +136,7 @@ class Mul(Linear):
         )
 
 
-class MatMul(Linear):
+class MatMul(Bilinear):
     def __init__(self, left: Op, right: Op):
         def repr(a, b):
             return f"({a} @ {b})"
@@ -120,16 +149,14 @@ class MatMul(Linear):
         )
 
 
-class Conv2D(Linear):
-    def __init__(
-        self, input_right: Op | None, input_left: Op | None, kernel: Op, stride: int = 1
-    ):
+class Conv2D(Bilinear):
+    def __init__(self, input: Op, kernel: Op, stride: int = 1):
         """
         2d convolution operation with given stride
         Only supports valid as padding mode
         """
-        self.input_left = input_left
-        self.input_right = input_right
+
+        self.input = input
         self.kernel = kernel
         self.stride = stride
 
@@ -145,21 +172,7 @@ class Conv2D(Linear):
             perturbed_variable
         )  # shape (out_channels, in_channels, kernel_height, kernel_width)
 
-        output_height = (input_array.shape[0] - kernel_array.shape[0]) // self.stride
-        output_width = (input_array.shape[1] - kernel_array.shape[1]) // self.stride
-
-        output = np.zeros((output_height, output_width))
-
-        for i in range(output_height):
-            for j in range(output_width):
-                input_patch = input_array[
-                    :,
-                    i * self.stride : i * self.stride + kernel_array.shape[0],
-                    j * self.stride : j * self.stride + kernel_array.shape[1],
-                ]
-                output[:, :, i, j] = np.einsum("bchw,ochw", input_patch, kernel_array)
-        # TODO wip
-        return output
+        return conv2d(kernel_array, input_array, stride=self.stride)
 
 
 class Variable(Op):
@@ -249,6 +262,26 @@ class Exp(Op):
         return exp(self.arg.eval(perturbed_variable))
 
 
+class Sum(Op):
+    def __init__(self, arg: Op):
+        self.arg = arg
+
+    def eval(self, perturbed_variable=None):
+        return np.sum(self.arg.eval(perturbed_variable))
+
+    def diff(self):
+        return Sum(self.arg.diff())
+
+
+class MeanSquares(Op):
+    def __init__(self, arg: Op):
+        self.arg = arg
+
+    def diff(self):
+        # TODO: misses the division by number of elements
+        return Sum(Mul(self.arg, self.arg.diff()))
+
+
 # class Div(Op):
 #     def __init__(self, numerator, denominator):
 #         self.numerator = numerator
@@ -265,25 +298,13 @@ class Exp(Op):
 
 
 if __name__ == "__main__":
-    x = Variable(name="x", value=np.random.randn(3, 3), derivable=True)
-    y = Variable(name="y", value=np.random.randn(3, 3), derivable=True)
-    z = Variable(name="z", value=np.random.randn(3, 3), derivable=True)
+    x = np.random.randn(4, 3, 100, 100)
+    kernel = np.random.randn(2, 3, 5, 5)
+    y_true = np.array((0, 0, 1, 1))
 
-    expr = x
-    for v in (y, z):
-        expr = Tanh(expr) @ v
+    y_pred = Conv2D(kernel=kernel, input=x, stride=2)
 
-    print(f"Expression: {expr}")
-    print(f"Evaluated: {expr.eval(perturbed_variable=x)}")
-    print(f"Derivative: {expr.diff()}")
+    loss = MeanSquares(y_pred - y_true)
 
-    expr_diff = expr.diff()
-
-    variables_to_eval_derivative_on = [x, y, z]
-    evaluated_derivatives_by_variable = {}
-    for evaluated_variable in variables_to_eval_derivative_on:
-        evaluated_derivatives_by_variable[evaluated_variable] = expr_diff.eval(
-            perturbed_variable=evaluated_variable
-        )
-
-    print(evaluated_derivatives_by_variable)
+    print(y_pred)
+    print()
