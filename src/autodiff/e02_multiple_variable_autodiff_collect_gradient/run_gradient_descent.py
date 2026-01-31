@@ -49,6 +49,18 @@ if __name__ == "__main__":
 
         loss = sum(partial_losses)
 
+        print(
+            "Gradient a:",
+            loss.diff(wrt=a),
+        )
+
+        print(
+            "Gradient b:",
+            loss.diff(wrt=b),
+        )
+
+        exit(0)
+
         a.value -= learning_rate * loss.diff(wrt=a).eval()
         b.value -= learning_rate * loss.diff(wrt=b).eval()
         c.value -= learning_rate * loss.diff(wrt=c).eval()

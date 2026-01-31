@@ -11,9 +11,6 @@ class Op:
     def diff(self, wrt: Variable) -> Op:
         raise NotImplementedError("Subclasses should implement this method.")
 
-    def collect_gradient(self) -> defaultdict:
-        raise NotImplementedError("Subclasses should implement this method.")
-
     def __add__(self, other: "Op"):
         return Add(self, other)
 
@@ -104,6 +101,8 @@ class Mul(Op):
 
 
 if __name__ == "__main__":
+    # Example usage:
+
     # Constants (considered as such)
     a = Variable("a", 3.0)
     b = Variable("b", 2.0)

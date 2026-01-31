@@ -5,7 +5,7 @@ class Op:
     def eval(self):
         raise NotImplementedError("Subclasses should implement this method.")
 
-    def diff(self, wrt: Variable) -> Op:
+    def diff(self) -> Op:
         raise NotImplementedError("Subclasses should implement this method.")
 
 
@@ -54,6 +54,7 @@ class Add(Op):
         return self.left.eval() + self.right.eval()
 
 
+# TODO : remove this class and leave it as exercise
 class Sub(Op):
     def __init__(self, left: Op, right: Op):
         self.left = left
@@ -84,8 +85,8 @@ class Mul(Op):
         return Add(Mul(self.left.diff(), self.right), Mul(self.left, self.right.diff()))
 
 
-# Example usage:
 if __name__ == "__main__":
+    # Example usage:
     x = Variable(name="x", value=5.0)
     C = Constant(name="C", value=2.0)
 
