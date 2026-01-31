@@ -29,17 +29,17 @@ class Op:
         return Add(self, Mul(other, Variable("minus_one", value=-1.0, derivable=False)))
 
 
-class Delta(Op):
-    def __init__(self, perturbed_variable: "Variable"):
-        self.perturbed_variable = perturbed_variable
+# class Delta(Op):
+#     def __init__(self, perturbed_variable: "Variable"):
+#         self.perturbed_variable = perturbed_variable
 
-    def __repr__(self):
-        return f"Delta_{self.perturbed_variable.name}"
+#     def __repr__(self):
+#         return f"Delta_{self.perturbed_variable.name}"
 
-    def eval(self, perturbed_variable=None):
-        if self.perturbed_variable == perturbed_variable:
-            return 1.0
-        return 0.0
+#     def eval(self, perturbed_variable=None):
+#         if self.perturbed_variable == perturbed_variable:
+#             return 1.0
+#         return 0.0
 
 
 class Linear(Op):
@@ -54,7 +54,7 @@ class Linear(Op):
     def eval(self, perturbed_variable: Delta):
         arg_eval = self.arg.eval(perturbed_variable)
         return self.operation(arg_eval)
-    
+
     def diff(self):
         arg_diff = self.arg.diff()
 

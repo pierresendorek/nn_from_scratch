@@ -1,12 +1,14 @@
+from __future__ import annotations
+
 from collections import defaultdict
 from math import exp
 
 
 class Op:
-    def eval(self, perturbed_variable=None):
+    def eval(self):
         raise NotImplementedError("Subclasses should implement this method.")
 
-    def diff(self) -> "Op":
+    def diff(self, wrt: Variable) -> Op:
         raise NotImplementedError("Subclasses should implement this method.")
 
     def collect_gradient(self) -> defaultdict:
@@ -22,43 +24,22 @@ class Op:
         return Sub(self, other)
 
 
-class Delta(Op):
-    def __init__(self, perturbed_variable: "Variable"):
-        self.perturbed_variable = perturbed_variable
-
-    def __repr__(self):
-        return f"Delta_{self.perturbed_variable.name}"
-
-    def eval(self, perturbed_variable=None):
-        if self.perturbed_variable == perturbed_variable:
-            return 1.0
-        return 0.0
-
-
 class Variable(Op):
-    def __init__(self, name: str, value: float, derivable: bool):
+    def __init__(self, name: str, value: float):
         self.name = name
         self.value = value
-        self.derivable = derivable
 
     def __repr__(self):
-        if self.derivable:
-            return self.name
-        else:
-            return str(self.value)
+        return f"({self.name}={self.value})"
 
-    def eval(self, perturbed_variable=None):
+    def eval(self):
         return self.value
 
-    def diff(self):
-        if self.derivable:
-            return Delta(perturbed_variable=self)
+    def diff(self, wrt: Variable) -> Op:
+        if self == wrt:
+            return Variable(name="one", value=1.0)
         else:
-            return Variable("zero", value=0.0, derivable=False)
-
-
-def is_zero(expr: Op):
-    return isinstance(expr, Variable) and not expr.derivable and expr.value == 0
+            return Variable(name="zero", value=0.0)
 
 
 class Add(Op):
@@ -69,11 +50,11 @@ class Add(Op):
     def __repr__(self):
         return f"({self.left} + {self.right})"
 
-    def diff(self):
-        return Add(self.left.diff(), self.right.diff())
+    def diff(self, wrt: Variable) -> Op:
+        return Add(self.left.diff(wrt), self.right.diff(wrt))
 
-    def eval(self, perturbed_variable=None):
-        return self.left.eval(perturbed_variable) + self.right.eval(perturbed_variable)
+    def eval(self):
+        return self.left.eval() + self.right.eval()
 
 
 class Sub(Op):
@@ -84,25 +65,25 @@ class Sub(Op):
     def __repr__(self):
         return f"({self.left} - {self.right})"
 
-    def diff(self):
-        return Sub(self.left.diff(), self.right.diff())
+    def diff(self, wrt: Variable) -> Op:
+        return Sub(self.left.diff(wrt), self.right.diff(wrt))
 
-    def eval(self, perturbed_variable=None):
-        return self.left.eval(perturbed_variable) - self.right.eval(perturbed_variable)
+    def eval(self):
+        return self.left.eval() - self.right.eval()
 
 
 class Exp(Op):
     def __init__(self, arg: Op):
         self.arg = arg
 
-    def diff(self):
-        return Mul(Exp(self.arg), self.arg.diff())
+    def diff(self, wrt: Variable) -> Op:
+        return Mul(Exp(self.arg), self.arg.diff(wrt))
 
     def __repr__(self):
         return f"exp({self.arg})"
 
-    def eval(self, perturbed_variable=None):
-        return exp(self.arg.eval(perturbed_variable))
+    def eval(self):
+        return exp(self.arg.eval())
 
 
 class Mul(Op):
@@ -113,42 +94,26 @@ class Mul(Op):
     def __repr__(self):
         return f"({self.left} * {self.right})"
 
-    def eval(self, perturbed_variable=None):
-        return self.left.eval(perturbed_variable) * self.right.eval(perturbed_variable)
+    def eval(self):
+        return self.left.eval() * self.right.eval()
 
-    def diff(self):
-        left_diff = self.left.diff()
-        right_diff = self.right.diff()
-        if is_zero(left_diff) and is_zero(right_diff):
-            return Variable(name="zero", value=0.0, derivable=False)
-
-        elif is_zero(left_diff):
-            return Mul(self.left, right_diff)
-        elif is_zero(right_diff):
-            return Mul(left_diff, self.right)
-        else:
-            return Add(Mul(left_diff, self.right), Mul(self.left, right_diff))
+    def diff(self, wrt: Variable) -> Op:
+        left_diff = self.left.diff(wrt)
+        right_diff = self.right.diff(wrt)
+        return Add(Mul(left_diff, self.right), Mul(self.left, right_diff))
 
 
 if __name__ == "__main__":
-    a = Variable("a", 3.0, False)
-    b = Variable("b", 2.0, False)
+    # Constants (considered as such)
+    a = Variable("a", 3.0)
+    b = Variable("b", 2.0)
 
-    x = Variable(name="x", value=0.1, derivable=True)
-    y = Variable(name="y", value=0.2, derivable=True)
+    # Variables
+    x = Variable(name="x", value=0.1)
+    y = Variable(name="y", value=0.2)
 
     expr = a * x * x + b * y
     print(f"Expression: {expr}")
     print(f"Evaluated: {expr.eval()}")
-    print(f"Derivative: {expr.diff()}")
-
-    expr_diff = expr.diff()
-
-    variables_to_eval_derivative_on = [x, y]
-    evaluated_derivatives_by_variable = {}
-    for evaluated_variable in variables_to_eval_derivative_on:
-        evaluated_derivatives_by_variable[evaluated_variable] = expr_diff.eval(
-            perturbed_variable=evaluated_variable
-        )
-
-    print(evaluated_derivatives_by_variable)
+    print(f"Derivative: {expr.diff(wrt=x)}")  # should be 2ax
+    print(f"Derivative: {expr.diff(wrt=y)}")  # should be b
