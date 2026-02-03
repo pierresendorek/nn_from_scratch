@@ -323,11 +323,14 @@ $ f(x + epsilon) approx f(x) + partial f(x).epsilon $
 
 == Intérêt de la dérivée directionnelle
 
-/ *Question* : Quels sont les avantages et inconvénients de chacune des formules ?
+#slide[
+/ *Question* : Quels sont les avantages de la dérivée directionnelle ?
 
-
+#uncover((beginning:2))[
 *Intérêt* : Rester à un niveau d'abstraction tenseurs/matrices/vecteurs sans se noyer dans les indices.\ => Gain en lisibilité et en clarté.
+]
 
+#uncover((beginning:3))[
 Sans dérivée directionnelle :
 
 $ y(k) = sigma(sum_i w_(k,i) sigma(sum_j w^0_(i,j) x_j + b^0_i) + b^1_k) $
@@ -335,7 +338,8 @@ $ y(k) = sigma(sum_i w_(k,i) sigma(sum_j w^0_(i,j) x_j + b^0_i) + b^1_k) $
 La dérivée par rapport à $w^0_(p,q)$ est :
 
 $ (partial y(k)) / (partial w^0_(m,n)) = sigma'(sum_i w_(k,i) sigma(sum_j w^0_(i,j) x_j + b^0_i) + b^1_k) dot w_(k,m) dot sigma'(sum_j w^0_(m,j) x_j + b^0_m) dot x_n $
-
+]
+]
 
 == Avec la dérivée directionnelle
 
@@ -346,6 +350,7 @@ $ y = sigma(w_1 sigma(w_0 x + b_0) + b_1) $ \
 Avec la dérivée directionnelle, la dérivée par rapport à $w^0$ s'écrit :
 
 $ (partial y) / (partial w_0) = sigma'(w_1 sigma(w_0 x + b_0) + b_1).w_1.sigma'(w_0 x + b_0)x $
+
 
 
 = Backpropagation
@@ -392,6 +397,17 @@ $ ((partial y_n)/(partial w_k)) &=   (product_(i=k+1)^(n) (partial f_(i))/(parti
   
   ]
 ]
+
+== Qu'est ce que la backpropagation ?
+
+La backpropagation est un algorithme permettant de 
+-  calculer efficacement la dérivée d'un réseau de neurones 
+- en mémorisant les résultats intermédiaires dans le produit :
+
+$ ((partial y_n)/(partial w_k)) &=   (product_(i=k+1)^(n) (partial f_(i))/(partial y_(i))) (partial f_k)/(partial w_k) $
+
+= Fin de la partie théorique
+
 
 // == Comment calculer le gradient ?
 
