@@ -69,11 +69,31 @@
 = Réseau de neurones
 == Qu'est ce qu'un réseau de neurones ?
 
-
-// TODO intégrer partie Hakan
-
+#slide[
 #set align(center)
-#image("images/dag_color.webp")
+#image("images/dag_color.webp", height: 150pt)
+
+#set align(left)
+#uncover((beginning:2))[
+- Un réseau de neurones est une fonction paramétrée $y(w, x)$
+- Il est en général composé de plusieurs couches empilées, correspondant chacune à une fonction paramétrée $f_i (w_i, .)$
+- On peut le représenter sous forme d'un DAG (graphe orienté acyclique)
+]
+]
+
+== Comment entraine t'on un réseau de neurones ?
+
+#slide[
+#set align(center)
+#image("images/gradient_descent.webp", height: 150pt)
+
+#uncover((beginning:2))[
+#set align(left)
+- On définit une fonction de coût $cal(L)(w)$
+- On minimise cette fonction de coût par rapport aux paramètres $w$ du réseau
+]
+
+]
 
 == Dérivée
 #slide[
@@ -98,6 +118,10 @@
 //  ]
 //#uncover((beginning:4))[
   $ x_(n+1) = x_n - eta . f'(x_n) $
+]
+
+#uncover((beginning:3))[
+  - Dans le réseau de neurones, la variable que l'on modifie est $w$ (les paramètres du réseau) et non pas $x$.
 ]
 
 ]
@@ -269,8 +293,6 @@ $ (partial f)/(partial x)(x, y).v = lim_(h->0)(f(x + h v) - f(x))/h $
 $ (partial f)/(partial x)(x, y).epsilon = partial_x f(x, y).epsilon $
 ]
 ]
-== TODO
-/ *Intérêt* : dérivée couche par couche
 
 == Formules usuelles
 
@@ -299,26 +321,32 @@ $ f(x + epsilon) approx f(x) + partial f(x).epsilon $
 #set align(left)
 \*La non-commutativité doit être respectée pour les produits.
 
+== Intérêt de la dérivée directionnelle
 
-
-// == Différentiation : récapitulatif
-
-// Approximations locales. Quels sont les avantages/inconvénients de chacune ?
-
-// - La dérivée d'une fonction d'une variable réelle :
-// $ f(x + h) approx f(x) + f'(x).h $
-// - (2) La dérivée de plusieurs variables réelles :
-// $ f(x+ epsilon_x ,y + epsilon_y) approx f(x, y) + (partial f) / (partial x)(x,y). epsilon_x + (partial f) / (partial y)(x,y). epsilon_y $
-// - La dérivée par rapport à un vecteur :
-// $ f(x + epsilon) approx f(x) + nabla f(x).epsilon $
-// - La dérivée directionnelle, par rapport à plusieurs vecteurs (même formule que (2), mais avec des vecteurs).
-
-// //$ f(x + Delta_x, y + Delta_y) approx f(x, y) + partial_x f(x,y).Delta_x + partial_y f(x,y).Delta_y $
-
-==
 / *Question* : Quels sont les avantages et inconvénients de chacune des formules ?
 
-- Dérivée directionnelle : permet de rester au niveau d'abstraction souhaitée. Manier plusieurs vecteurs/matrices.
+
+*Intérêt* : Rester à un niveau d'abstraction tenseurs/matrices/vecteurs sans se noyer dans les indices.\ => Gain en lisibilité et en clarté.
+
+Sans dérivée directionnelle :
+
+$ y(k) = sigma(sum_i w_(k,i) sigma(sum_j w^0_(i,j) x_j + b^0_i) + b^1_k) $
+
+La dérivée par rapport à $w^0_(p,q)$ est :
+
+$ (partial y(k)) / (partial w^0_(m,n)) = sigma'(sum_i w_(k,i) sigma(sum_j w^0_(i,j) x_j + b^0_i) + b^1_k) dot w_(k,m) dot sigma'(sum_j w^0_(m,j) x_j + b^0_m) dot x_n $
+
+
+== Avec la dérivée directionnelle
+
+Formule sans indices :
+ 
+$ y = sigma(w_1 sigma(w_0 x + b_0) + b_1) $ \
+
+Avec la dérivée directionnelle, la dérivée par rapport à $w^0$ s'écrit :
+
+$ (partial y) / (partial w_0) = sigma'(w_1 sigma(w_0 x + b_0) + b_1).w_1.sigma'(w_0 x + b_0)x $
+
 
 = Backpropagation
 
@@ -360,28 +388,29 @@ $ ((partial y_n)/(partial w_k)) &=   (product_(i=k+1)^(n) (partial f_(i))/(parti
   
 
   $=>$ On aimerait mémoriser _(memoize)_ le résultat pour le réutiliser.\
-  $=>$ La dérivée de la fonction et la fonction gagneraient à se ressembler.
+  $=>$ La dérivée de la fonction et la fonction gagneraient à se ressembler.\
+  
   ]
 ]
 
-== Comment calculer le gradient ?
+// == Comment calculer le gradient ?
 
-#slide[
-$ colred(partial f(...). partial g(...)) . Delta w $
-/ *Question*: On souhaite calculer le terme qui multiplie $Delta w$, qui est le gradient.\
-  *Problème* : les opérations que l'on a défini (FeedForward, Convolution) sont définies pour prendre une entrée à droite et donner une sortie 
-  $ y = A . x $
+// #slide[
+// $ colred(partial f(...). partial g(...)) . Delta w $
+// / *Question*: On souhaite calculer le terme qui multiplie $Delta w$, qui est le gradient.\
+//   *Problème* : les opérations que l'on a défini (FeedForward, Convolution) sont définies pour prendre une entrée à droite et donner une sortie 
+//   $ y = A . x $
 
-*Comment faire ?*\
-#uncover((beginning:2))[
-Remplacer $Delta w$ par chacun de vecteurs de la base canonique ?\ 
-]
-#uncover((beginning:3))[
-Constater que les opérations sont toutes linéaires, et que par associativité
+// *Comment faire ?*\
+// #uncover((beginning:2))[
+// Remplacer $Delta w$ par chacun de vecteurs de la base canonique ?\ 
+// ]
+// #uncover((beginning:3))[
+// Constater que les opérations sont toutes linéaires, et que par associativité
 
 
-]
+// ]
 
-]
+// ]
 
 
