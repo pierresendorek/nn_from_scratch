@@ -1,6 +1,4 @@
 from __future__ import annotations
-
-from collections import defaultdict
 from math import exp
 
 

@@ -39,28 +39,41 @@
 )
 
 
-== Plan
 
-- Réseau de neurones comme MLP
-- Dérivée
-- Calcul automatique de la dérivée
-- Implémentation de classes Python pour la dérivée symbolique
-- Formulation d'un problème d'optimisation
-- Optimisation
-- Utilisation de plusieurs plusieurs couches
-- Constat : prend du temps
-- Backpropagation
+// == Plan
+
+// - Réseau de neurones comme MLP
+// - Dérivée
+// - Calcul automatique de la dérivée
+// - Implémentation de classes Python pour la dérivée symbolique
+// - Formulation d'un problème d'optimisation
+// - Optimisation
+// - Utilisation de plusieurs plusieurs couches
+// - Constat : prend du temps
+// - Backpropagation
+
+
+
 
 
 == Objectifs
-
+- S'amuser
 - Uniquement les aspects théoriques des réseaux de neurones (uniquement Python, Numpy)
 - Implémenter un autodiff
-- Implémenter la backpropagation
-- Implémenter un réseau convolutif pour la classification d'images
+// - Implémenter la backpropagation
+// - Implémenter un réseau convolutif pour la classification d'images
 - Incrémental
 - Comprendre l'apport d'une librairie de réseaux de neurones
 
+
+= Réseau de neurones
+== Qu'est ce qu'un réseau de neurones ?
+
+
+// TODO intégrer partie Hakan
+
+#set align(center)
+#image("images/dag_color.webp")
 
 == Dérivée
 #slide[
@@ -88,8 +101,8 @@
 ]
 
 ]
-
-== Calcul automatique de la dérivée
+= Autodiff - calcul automatique de la dérivée
+== Formules usuelles pour la dérivée de fonctions de $bb(R)$ dans $bb(R)$
 
 // table containiing the different rules
 #set align(center)
@@ -111,7 +124,7 @@
 
 )
 
-== Exercice : Implémentation en Python
+== Exercice 01.a : Implémentation en Python
 
 #set align(left)
 
@@ -138,7 +151,7 @@ class Add(Op):
 
 
 
-== Exercice : Test de l'autodiff
+== Exercice 01.b : Test de l'autodiff
 #set align(horizon)
 - Avec votre code Python, calculez la dérivée de l'expression suivante : $(x + 2) * (x + 3) $
 
@@ -149,7 +162,7 @@ $ (x + 3) + (x + 2) = 2 x + 5 $
 - Quid de l'expression $(x + 1) * (y + 2)$ ? 
 
 
-== Exercice : estimation d'un paramètre
+== Exercice 01.c : estimation d'un paramètre
 
 #set align(horizon + left)
 Estimer la moyenne $mu$ d'un jeu de données $X_1,...,X_N$ où 
@@ -160,50 +173,52 @@ Estimer la moyenne $mu$ d'un jeu de données $X_1,...,X_N$ où
 
 $ cal(L)(hat(mu)) = sum_i (X_i - hat(mu))^2 $
 
+Vérifier que $hat(mu) approx mu$
+
 
 
 == Quelles sont les améliorations possibles dans le code ?
-
+// TODO uncover
 - Enlever automatiquement les 0 des additions
 - Simplifier automatiquement les multiplications par 1 
 - Surcharger les opérateurs Python (+, \*, ...)
+- Afficher le graphe de calcul (le fameux DAG)
 - Permettre de dériver par rapport à plusieurs variables
 
 
-
+= Dérivée de fonctions de plusieurs variables
 == Derivee multi-variables
 
 #set align(left + horizon)
 #slide[
-Pour calculer une approximation locale de la fonction $x,y -> f(x,y)$
+Pour calculer une approximation locale de la fonction $x,y mapsto f(x,y)$
 
 #set align(horizon)
-$ f(x + Delta x, y + Delta y)  approx f(x, y) + (partial f)/(partial x) Delta x + (partial f)/(partial y) Delta y $
+$ f(x + epsilon_x, y + epsilon_y)  approx f(x, y) + (partial f)/(partial x) epsilon_x + (partial f)/(partial y) epsilon_y $
 
 
 //#uncover((beginning:2))[
-Similaire à $ f(x + h) approx f(x) + f'(x).h $
+Similaire à $ f(x + epsilon) approx f(x) + f'(x).epsilon $
 //]
 
 ]
 
-== Implémentation de la dérivée multi-variables
+== Exercice : Implémentation de la dérivée multi-variables
 
-#figure[
-#set align(left + horizon)
-On rajoute une node dans le graphe d'opérations :
+#slide[
 
-#set align(center)
-#image("images/delta.png", fit:"contain", width: 40%)
 
-#set align(left + horizon)
-Et on change la manière d'obtenir la dérivée :
-#image("images/delta_usage.png", fit:"contain", width: 90%)
+/ *Question* : Comment modifier le code existant pour implémenter la dérivée multi-variables ?
 
 
 
+#uncover((beginning:2))[
+Une solution, dans la classe `Variable` :
+#image("images/diff_wrt.png")
+]
 
 ]
+
 
 == Exercice : optimisation
 
@@ -218,21 +233,26 @@ $ cal(L)(a,b) = sum_i (y_i - (a x_i + b))^2 $
 
 
 
-== Gradient et Jacobienne - Simplification des notations
+== Gradient et Jacobienne
 #slide[
 
 On souhaite calculer une approximation locale de la fonction $x -> f(x)$ *où $x$ est un vecteur* et contient de nombreuses variables. 
 
 #set align(horizon)
-$ f(x + Delta x)  approx f(x) + J f(x). Delta x $
+Lorsque $f : bb(R)^n -> bb(R)^m$, $J f(x)$ est une matrice
+$ f(x + epsilon)  approx f(x) + J f(x). epsilon $
 
+Lorsque $f : bb(R)^n -> bb(R)$, $nabla f(x)$ est un vecteur de $bb(R)^n$
+$ f(x + epsilon)  approx f(x) + nabla f(x). epsilon $
 
 
 #uncover((beginning:2))[
-Similaire à $ f(x + h) approx f(x) + f'(x).h $
+Similaire à lorsque $f : bb(R) -> bb(R)$ 
+$ f(x + epsilon) approx f(x) + f'(x).epsilon $
 ]
 
 ]
+= Dérivée directionnelle
 
 == Dérivée directionnelle
 #slide[
@@ -246,16 +266,17 @@ On définit sa dérivée directionnelle par rapport à $x$ ainsi :
 $ (partial f)/(partial x)(x, y).v = lim_(h->0)(f(x + h v) - f(x))/h $
 
 #uncover((beginning:2))[On utilisera aussi la notation plus légère
-$ (partial f)/(partial x)(x, y).v = partial_x f(x, y).v $
+$ (partial f)/(partial x)(x, y).epsilon = partial_x f(x, y).epsilon $
 ]
 ]
+== TODO
+/ *Intérêt* : dérivée couche par couche
 
-== Intérêt de la dérivée directionnelle
+== Formules usuelles
 
 - La dérivée de la composée de fonctions et des applications linéaires se marie bien dans le cadre des réseaux de neurones.\
 
-- On peut construire un tableau analogue, pour un petit $v$ 
-$ f(x + v) approx f(x) + partial f(x).v $
+$ f(x + epsilon) approx f(x) + partial f(x).epsilon $
 #set align(center)
 #set align(horizon)
 
@@ -267,29 +288,32 @@ $ f(x + v) approx f(x) + partial f(x).v $
     [Dérivée]
   ),
   [Constante],[$C$], [$0$],
-  [Application linéaire], [$A.x$], [$A.v$],
-  [Norme au carré],[$||x||^2$], [$2 x.v$],
-  [Somme],[$f(x) + g(x)$], [$partial f(x) + partial g(x)$],
-  [Produit (matriciel)],[$f(x).g(x)$], [$(partial f(x).v).g(x) + f(x). partial g(x).v$],
-  [Composition],[$f(g(x))$], [$partial f(g(x)). partial g(x).v$],
+  [Application linéaire], [$A.x$], [$A.epsilon$],
+  [Application bilinéaire], [$B(x_1, x_2)$], [$B(x_1, epsilon_2) + B(epsilon_1, x_2)$],
+  [Norme au carré],[$||x||^2$], [$2 x.epsilon$],
+  [Somme],[$f(x) + g(x)$], [$partial f(x) epsilon + partial g(x) epsilon$],
+  [Produit (matriciel)],[$f(x).g(x)$], [$(partial f(x).epsilon).g(x) + f(x). partial g(x).epsilon$],
+  [Composition],[$f(g(x))$], [$partial f(g(x)). partial g(x).epsilon$],
   
 )
 #set align(left)
 \*La non-commutativité doit être respectée pour les produits.
 
-== Différentiation : récapitulatif
 
-Approximations locales. Quels sont les avantages/inconvénients de chacune ?
 
-- La dérivée d'une fonction d'une variable réelle :
-$ f(x + h) approx f(x) + f'(x).h $
-- (2) La dérivée de plusieurs variables réelles :
-$ f(x+ Delta_x ,y + Delta_y) approx f(x, y) + (partial f) / (partial x)(x,y). Delta_x + (partial f) / (partial y)(x,y). Delta_y $
-- La dérivée par rapport à un vecteur :
-$ f(x + v) approx f(x) + nabla f(x).v $
-- La dérivée directionnelle, par rapport à plusieurs vecteurs (même formule que (2), mais avec des vecteurs).
+// == Différentiation : récapitulatif
 
-//$ f(x + Delta_x, y + Delta_y) approx f(x, y) + partial_x f(x,y).Delta_x + partial_y f(x,y).Delta_y $
+// Approximations locales. Quels sont les avantages/inconvénients de chacune ?
+
+// - La dérivée d'une fonction d'une variable réelle :
+// $ f(x + h) approx f(x) + f'(x).h $
+// - (2) La dérivée de plusieurs variables réelles :
+// $ f(x+ epsilon_x ,y + epsilon_y) approx f(x, y) + (partial f) / (partial x)(x,y). epsilon_x + (partial f) / (partial y)(x,y). epsilon_y $
+// - La dérivée par rapport à un vecteur :
+// $ f(x + epsilon) approx f(x) + nabla f(x).epsilon $
+// - La dérivée directionnelle, par rapport à plusieurs vecteurs (même formule que (2), mais avec des vecteurs).
+
+// //$ f(x + Delta_x, y + Delta_y) approx f(x, y) + partial_x f(x,y).Delta_x + partial_y f(x,y).Delta_y $
 
 ==
 / *Question* : Quels sont les avantages et inconvénients de chacune des formules ?
@@ -302,7 +326,7 @@ $ f(x + v) approx f(x) + nabla f(x).v $
 #slide[
 Réseau de neurones : empilement de couches 
 
-$ y(w, x) = ...f_3(w_3, f_2(w_2, f_1(w_1, f_0(w_0, x)))) $
+$ y(w, x) = f_n (...f_3(w_3, f_2(w_2, f_1(w_1, f_0(w_0, x))))...) $
 
 Ou en définissant le réseau de manière récursive
 
@@ -318,14 +342,25 @@ $ y(w, x) = y_n (w_(0:n), x) = f_n (w_n, y_(n-1)(w_(0:n-1), x)) $
 
 == Dérivée du réseau de neurones
 #slide[
+  On dérive par rapport aux paramètres d'une couche $k < n$ :
 
-$ partial_w y (w, x).Delta w_(0:n) &= partial_w_n f_(n)(w_(n), colblue(y_(n-1) (w_(0:n-1), x))). Delta w_n \ &+ partial_y_(n-1) f_(n)(w_(n), colblue(y_(n-1) (w_(0:n-1), x))). colgreen(partial_w_(0:n-1) y_(n-1)(w_(0:n-1), x)).Delta w_(0:n-1)$
+$ colred((partial y_n)/(partial w_k)) &= (partial  f_n)/(partial y) . colred((partial y_(n-1))/(partial w_k)) $
+
+
+
 / *Question*: Que remarque t'on ?
 
+
+
 #uncover(2)[
-  Le terme en bleu apparaît deux fois à chaque niveau de récursion/couche !\
+Une formule récursive apparait
+// TODO check indices
+$ ((partial y_n)/(partial w_k)) &=   (product_(i=k+1)^(n) (partial f_(i))/(partial y_(i))) (partial f_k)/(partial w_k) $
+
+  
+
   $=>$ On aimerait mémoriser _(memoize)_ le résultat pour le réutiliser.\
-  $=>$ Le terme en vert gagnerait à ressembler au terme bleu pour profiter aussi du calcul déjà mémorisé.
+  $=>$ La dérivée de la fonction et la fonction gagneraient à se ressembler.
   ]
 ]
 
