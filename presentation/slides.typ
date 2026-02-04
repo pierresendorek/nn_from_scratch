@@ -442,6 +442,12 @@ $ ((partial y_n)/(partial w_k)) &=   (product_(i=k+1)^(n) (partial f_(i))/(parti
 ]
 = Fin de la partie théorique
 
+== Sources
+
+- #link("https://github.com/karpathy/micrograd") Micrograd de Andrej Karpathy
+- #link("https://dlvu.github.io/") Vrije Universiteit Amsterdam - Deep Learning course
+- #link("https://mathworld.wolfram.com/DirectionalDerivative.html") Directional derivative
+
 
 // == Comment calculer le gradient ?
 
