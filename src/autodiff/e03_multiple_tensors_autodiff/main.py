@@ -11,10 +11,7 @@ class Op:
     def eval(self):
         raise NotImplementedError("Subclasses should implement this method.")
 
-    def diff(self, wrt: Variable, direction: Variable) -> "Op":
-        raise NotImplementedError("Subclasses should implement this method.")
-
-    def collect_gradient(self) -> defaultdict:
+    def diff(self, wrt: Variable, direction: Variable) -> Op:
         raise NotImplementedError("Subclasses should implement this method.")
 
     def __add__(self, other: "Op"):
@@ -148,6 +145,7 @@ class Bilinear(Op):
         left_diff = self.left.diff(wrt, direction)
         right_diff = self.right.diff(wrt, direction)
 
+        ## Simplification rules (optional)
         # if isinstance(left_diff, ConstantZero) and isinstance(right_diff, ConstantZero):
         #     return ConstantZero()
 
@@ -192,26 +190,6 @@ class Mul(Bilinear):
         )
 
 
-# class Matrix(Bilinear):
-#     @staticmethod
-#     def operation(input: Op, matrix: Op) -> Op:
-#         """_summary_
-#             input (Op): tensor with shape (batch_size, nb_channels_input,...)
-#             matrix (Op): matrix with shape (nb_channels_output, nb_channels_input)
-#         Returns:
-#             Op: out(b, j, ...) = sum over i of matrix(j, i) * input(b, i, ...)
-#         """
-#         return np.einsum("bi...,ji->bj...")
-
-#     def __init__(self, left: Op, right: Op):
-#         super().__init__(
-#             repr=lambda l, r: f"({l} ° {r})",
-#             left=left,
-#             right=right,
-#             operation=self.operation,
-#         )
-
-
 class MatMul(Bilinear):
     def __init__(self, left: Op, right: Op):
         def repr(a, b):
@@ -229,68 +207,6 @@ def square(x: Op) -> Op:
     return Mul(x, x)
 
 
-# class Tanh(Op):
-#     def __init__(self, arg: Op):
-#         self.arg = arg
-
-#     def eval(self, perturbed_variable=None):
-#         arg = self.arg.eval(perturbed_variable)
-#         e = np.exp(2 * arg)
-#         return (e - 1) / (e + 1)
-
-#     def diff(self):
-#         return Sech2(self.arg) * self.arg.diff()
-
-#     def __repr__(self):
-#         return f"Tanh({self.arg})"
-
-
-# class Sech2(Op):
-#     def __init__(self, arg: Op):
-#         self.arg = arg
-
-#     def eval(self, perturbed_variable=None):
-#         arg = self.arg.eval(perturbed_variable)
-#         e_pos = np.exp(arg)
-#         e_neg = np.exp(-arg)
-#         return 4 / (e_pos + e_neg)
-
-#     def __repr__(self):
-#         return f"Sech2({self.arg})"
-
-#     # diff is purposedly undefined
-
-
-# class Exp(Op):
-#     def __init__(self, arg: Op):
-#         """
-#         Pointwise exponential
-#         """
-#         self.arg = arg
-
-#     def diff(self):
-#         return Mul(Exp(self.arg), self.arg.diff())
-
-#     def __repr__(self):
-#         return f"exp({self.arg})"
-
-#     def eval(self, perturbed_variable=None):
-#         return exp(self.arg.eval(perturbed_variable))
-
-
-# # class Div(Op):
-# #     def __init__(self, numerator, denominator):
-# #         self.numerator = numerator
-# #         self.denominator = denominator
-
-# #     def __repr__(self):
-# #         return f"({self.numerator})/({self.denominator})"
-
-# #     def eval(self, perturbed_variable=None):
-# #         return self.numerator.eval(perturbed_variable) / self.numerator.eval(perturbed_variable)
-
-# #     def diff(self, perturbed_variable):
-# #         return super().diff()
 
 if __name__ == "__main__":
     a = Variable(name="a", value=np.random.randn(3, 2))

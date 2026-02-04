@@ -227,7 +227,7 @@ Similaire à $ f(x + epsilon) approx f(x) + f'(x).epsilon $
 
 ]
 
-== Exercice : Implémentation de la dérivée multi-variables
+== Exercice 02a : Implémentation de la dérivée multi-variables
 
 #slide[
 
@@ -244,7 +244,7 @@ Une solution, dans la classe `Variable` :
 ]
 
 
-== Exercice : optimisation
+== Exercice 02b : optimisation
 
 #set align(horizon + left)
 On souhaite ajuster une droite $y = a x + b$ sur un jeu de données.
@@ -351,6 +351,37 @@ Avec la dérivée directionnelle, la dérivée par rapport à $w^0$ s'écrit :
 
 $ (partial y) / (partial w_0) = sigma'(w_1 sigma(w_0 x + b_0) + b_1).w_1.sigma'(w_0 x + b_0)x $
 
+== Exercice 03a dérivée par rapport à un tenseur
+
+#slide[
+
+/ *Question*: Que faut t'il modifier dans le code pour dériver par rapport des à des tenseurs/matrices/vecteurs ?\
+
+Rappel :
+   
+$ f(x + epsilon) approx f(x) + partial f(x).epsilon $  
+#uncover((beginning:2))[
+  #set align(center)
+  #image("images/diff_tensor.png", width: 100%)
+
+#set align(left)
+NB : Lorsque l'on dérivait par rapport à une variable réelle, on avait implicitement la direction $epsilon = 1$. Dans le cas tensoriel, il faut la prendre en compte.
+
+$ f(x + h epsilon) approx f(x) + h partial f(x).epsilon $
+]
+
+]
+
+== Exercice 03b : Descente de gradient avec des tenseurs
+
+Même exercice que Exercice 02b, mais en maniant des tenseurs plutôt que des variables individuelles.
+
+*Algorithme* : estime `a_true`, `b_true`, `c_true`, qui sont néanmoins des variables réelles et non pas des vecteurs/matrice/tenseurs.
+
+*Objectif de l'exercice* : 
+- Observer la différence de complexité de l'expression de la dérivée en comparaison de ce que l'on avait dans l'exercice 02b.
+
+- Décommenter le `break` dans la boucle après avoir enlevé les `print` pour laisser l'algo tourner plus longtemps.
 
 
 = Backpropagation
@@ -383,8 +414,6 @@ $ colred((partial y_n)/(partial w_k)) &= (partial  f_n)/(partial y) . colred((pa
 
 / *Question*: Que remarque t'on ?
 
-
-
 #uncover(2)[
 Une formule récursive apparait
 // TODO check indices
@@ -400,12 +429,17 @@ $ ((partial y_n)/(partial w_k)) &=   (product_(i=k+1)^(n) (partial f_(i))/(parti
 
 == Qu'est ce que la backpropagation ?
 
-La backpropagation est un algorithme permettant de 
+#slide[
+  / *Question*: Qu'est ce que la backpropagation ?
+#uncover(2)[
+
+C'est un algorithme permettant de 
 -  calculer efficacement la dérivée d'un réseau de neurones 
 - en mémorisant les résultats intermédiaires dans le produit :
 
 $ ((partial y_n)/(partial w_k)) &=   (product_(i=k+1)^(n) (partial f_(i))/(partial y_(i))) (partial f_k)/(partial w_k) $
-
+]
+]
 = Fin de la partie théorique
 
 
