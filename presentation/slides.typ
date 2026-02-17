@@ -27,8 +27,8 @@
 
 #show: slides.with(
   title: "Neural Networks from Scratch", // Required
-  subtitle: "Elements de théorie",
-  date: "01.01.2026",
+  subtitle: "Quelques éléments de théorie",
+  date: datetime.today().display("[day].[month].[year]"),
   authors: (""),
 
   // Optional Styling (for more and explanation of options take a look at the typst universe)
@@ -40,23 +40,9 @@
 
 
 
-// == Plan
-
-// - Réseau de neurones comme MLP
-// - Dérivée
-// - Calcul automatique de la dérivée
-// - Implémentation de classes Python pour la dérivée symbolique
-// - Formulation d'un problème d'optimisation
-// - Optimisation
-// - Utilisation de plusieurs plusieurs couches
-// - Constat : prend du temps
-// - Backpropagation
-
-
-
-
 
 == Objectifs
+#set align(horizon)
 - S'amuser
 - Uniquement les aspects théoriques des réseaux de neurones (uniquement Python, Numpy)
 - Implémenter un autodiff
@@ -100,30 +86,18 @@
 / *Question*: A quoi sert la dérivée d'une fonction pour l'entrainement d'un réseau de neurones ?
 
 #uncover((beginning:2))[
-- Donner la pente au voisinnage d'un point
-//  ]
-// #uncover((beginning:2))[
+- Donner la pente au voisinage d'un point
   $ f'(x) = lim_(h -> 0) (f(x + h) - f(x))/(h) $
-//  ]
 
-// #uncover((beginning:3))[
 - Donner une approximation locale de la fonction
-//  ]
-// #uncover((beginning:3))[
   $ f(x + h) approx f(x) + f'(x).h $
-//  ]
 
-//#uncover((beginning:4))[
 - Permettre de minimiser une fonction de coût
-//  ]
-//#uncover((beginning:4))[
   $ x_(n+1) = x_n - eta . f'(x_n) $
-]
 
-#uncover((beginning:3))[
-  - Dans le réseau de neurones, la variable que l'on modifie est $w$ (les paramètres du réseau) et non pas $x$.
-]
+- Dans le réseau de neurones, la variable que l'on modifie est $w$ (les paramètres du réseau) et non pas $x$.
 
+]
 ]
 = Autodiff - calcul automatique de la dérivée
 == Formules usuelles pour la dérivée de fonctions de $bb(R)$ dans $bb(R)$
@@ -146,6 +120,86 @@
   [Composition],[$f(g(x))$], [$f'(g(x)).g'(x)$],
   [Sigmoide],[$sigma(x) = 1 / (1 + e^(-x))$], [$sigma(x)(1 - sigma(x))$]   
 
+)
+
+== Représentation interne d'un graphe d'opérations
+#import "@preview/cetz:0.4.2": canvas, draw, tree
+
+#slide[
+
+#grid(
+  columns: (1fr, 1fr),
+  column-gutter: 1em,
+  box($ exp(x + tanh(x y))$),
+  canvas({
+    import draw: *
+    set-style(content: (padding: 0.1em))
+    tree.tree(
+      ($exp$, (
+          ($+$),
+          ($x$), 
+          ($tanh$, ($*$, ($x$), ($y$))),
+        )
+      ))
+  })
+)
+#set align(left)
+#uncover((beginning:2))[/ *Question*: Comment représenter cette expression en Python ?
+]
+
+]
+==
+#set align(left)
+On pourrait représenter l'addition ainsi, où `Op` implémente la dérivée `diff()`
+
+```python
+class Add(Op):
+    def __init__(self, left: Op, right: Op):
+        self.left = left
+        self.right = right
+
+    def diff(self):
+        return Add(self.left.diff(), self.right.diff())
+
+```
+#set align(left)
+/ *Question*: Comment représenter la fonction exponentielle ? Et la variable $x$ / fonction $x mapsto x$ ?
+
+
+== Dérivée
+
+Pour dériver, on transforme récursivement un graphe en un autre
+
+#grid(
+  columns: (1fr, 1fr),
+  column-gutter: 1em,
+  box($ f(g(x))$),
+  canvas({
+    import draw: *
+    set-style(content: (padding: 0.1em))
+    tree.tree(
+      ($f$, 
+          ($g$, $x$)),
+      grow: 0.5,
+    )
+  })
+)
+
+#line(length: 100%, stroke: 0.5pt + gray)
+
+#grid(
+  columns: (1fr, 1fr),
+  column-gutter: 1em,
+  box($ f'(g(x)) g'(x)$),
+  canvas({
+    import draw: *
+    set-style(content: (padding: 0.1em))
+    tree.tree(
+      ($*$,($f'$,($g$, $x$)),
+           ($g'$, $x$ )),
+      grow: 0.5,
+    )
+  })
 )
 
 == Exercice 01.a : Implémentation en Python
@@ -227,7 +281,7 @@ Similaire à $ f(x + epsilon) approx f(x) + f'(x).epsilon $
 
 ]
 
-== Exercice 02a : Implémentation de la dérivée multi-variables
+== Exercice 02.a : Implémentation de la dérivée multi-variables
 
 #slide[
 
@@ -239,12 +293,18 @@ Similaire à $ f(x + epsilon) approx f(x) + f'(x).epsilon $
 #uncover((beginning:2))[
 Une solution, dans la classe `Variable` :
 #image("images/diff_wrt.png")
-]
+Tester sur une fonction de deux variables, par exemple :
+$ f(x, y) = (x + 2)  (2y + 3) $
+Résultats attendu :
+$(partial f)/(partial x) = 2y + 3$ et
+$(partial f)/(partial y) = 2 (x + 2)$.
 
 ]
 
+]
 
-== Exercice 02b : optimisation
+
+== Exercice 02.b : optimisation
 
 #set align(horizon + left)
 On souhaite ajuster une droite $y = a x + b$ sur un jeu de données.
@@ -274,8 +334,25 @@ $ f(x + epsilon)  approx f(x) + nabla f(x). epsilon $
 Similaire à lorsque $f : bb(R) -> bb(R)$ 
 $ f(x + epsilon) approx f(x) + f'(x).epsilon $
 ]
-
 ]
+
+== Intérêt du gradient et de la jacobienne
+
+/ *Question* : Pourquoi utiliser le gradient/jacobienne ?
+
+- Permet de manipuler des fonctions à plusieurs variables à un autre niveau d'abstraction
+
+Inconvénient dans ce cadre : 
+- il faut manipuler des matrices pour la Jacobienne 
+- des vecteurs pour le gradient
+
+Alors que l'on a des plutôt des tenseurs en Machine Learning
+
+#set align(center)
+#image("images/tensor.webp", width: 25%)
+
+
+
 = Dérivée directionnelle
 
 == Dérivée directionnelle
@@ -294,9 +371,8 @@ $ (partial f)/(partial x)(x, y).epsilon = partial_x f(x, y).epsilon $
 ]
 ]
 
-== Formules usuelles
+== Formules usuelles pour la dérivée directionnelle
 
-- La dérivée de la composée de fonctions et des applications linéaires se marie bien dans le cadre des réseaux de neurones.\
 
 $ f(x + epsilon) approx f(x) + partial f(x).epsilon $
 #set align(center)
@@ -327,19 +403,19 @@ $ f(x + epsilon) approx f(x) + partial f(x).epsilon $
 / *Question* : Quels sont les avantages de la dérivée directionnelle ?
 
 #uncover((beginning:2))[
-*Intérêt* : Rester à un niveau d'abstraction tenseurs/matrices/vecteurs sans se noyer dans les indices.\ => Gain en lisibilité et en clarté.
+- Rester à un niveau d'abstraction tenseurs/matrices/vecteurs sans se noyer dans les indices\ 
+- Manier des tenseurs sans avoir à reshape en vecteur\
+$=>$ Gain en lisibilité et en clarté.
 ]
-
-#uncover((beginning:3))[
-Sans dérivée directionnelle :
+]
+== Sans dérivée directionnelle :
 
 $ y(k) = sigma(sum_i w_(k,i) sigma(sum_j w^0_(i,j) x_j + b^0_i) + b^1_k) $
 
 La dérivée par rapport à $w^0_(p,q)$ est :
 
-$ (partial y(k)) / (partial w^0_(m,n)) = sigma'(sum_i w_(k,i) sigma(sum_j w^0_(i,j) x_j + b^0_i) + b^1_k) dot w_(k,m) dot sigma'(sum_j w^0_(m,j) x_j + b^0_m) dot x_n $
-]
-]
+$ (partial y(k)) / (partial w^0_(m,n)) = sigma'(sum_i w_(k,i) sigma(sum_j w^0_(i,j) x_j + b^0_i) + b^1_k) dot w^1_(k,m) dot sigma'(sum_j w^0_(m,j) x_j + b^0_m) dot x_n $
+
 
 == Avec la dérivée directionnelle
 
@@ -351,7 +427,7 @@ Avec la dérivée directionnelle, la dérivée par rapport à $w^0$ s'écrit :
 
 $ (partial y) / (partial w_0) = sigma'(w_1 sigma(w_0 x + b_0) + b_1).w_1.sigma'(w_0 x + b_0)x $
 
-== Exercice 03a dérivée par rapport à un tenseur
+== Exercice 03.a dérivée par rapport à un tenseur
 
 #slide[
 
@@ -365,14 +441,14 @@ $ f(x + epsilon) approx f(x) + partial f(x).epsilon $
   #image("images/diff_tensor.png", width: 100%)
 
 #set align(left)
-NB : Lorsque l'on dérivait par rapport à une variable réelle, on avait implicitement la direction $epsilon = 1$. Dans le cas tensoriel, il faut la prendre en compte.
+NB : Lorsque l'on dérivait par rapport à une variable réelle, on avait implicitement la direction $epsilon = 1$. Dans le cas tensoriel, il faut prendre en compte que c'est un vecteur.
 
 $ f(x + h epsilon) approx f(x) + h partial f(x).epsilon $
 ]
 
 ]
 
-== Exercice 03b : Descente de gradient avec des tenseurs
+== Exercice 03.b : Descente de gradient avec des tenseurs
 
 Même exercice que Exercice 02b, mais en maniant des tenseurs plutôt que des variables individuelles.
 
@@ -417,7 +493,7 @@ $ colred((partial y_n)/(partial w_k)) &= (partial  f_n)/(partial y) . colred((pa
 #uncover(2)[
 Une formule récursive apparait
 // TODO check indices
-$ ((partial y_n)/(partial w_k)) &=   (product_(i=k+1)^(n) (partial f_(i))/(partial y_(i))) (partial f_k)/(partial w_k) $
+$ (partial y_n)/(partial w_k)&=   (product_(i=k+1)^(n) (partial f_(i))/(partial y_(i))) (partial f_k)/(partial w_k) $
 
   
 
@@ -433,13 +509,27 @@ $ ((partial y_n)/(partial w_k)) &=   (product_(i=k+1)^(n) (partial f_(i))/(parti
   / *Question*: Qu'est ce que la backpropagation ?
 #uncover(2)[
 
-C'est un algorithme permettant de 
--  calculer efficacement la dérivée d'un réseau de neurones 
+C'est un algorithme permettant de calculer efficacement la dérivée d'un réseau de neurones :
+- la structure par couches permet de dériver une seule couche à la fois (et multiplier par les dérivées des couches suivantes déjà calculées)
 - en mémorisant les résultats intermédiaires dans le produit :
 
 $ ((partial y_n)/(partial w_k)) &=   (product_(i=k+1)^(n) (partial f_(i))/(partial y_(i))) (partial f_k)/(partial w_k) $
 ]
 ]
+== Apport d'une librairie de réseaux de neurones
+
+Bénéficier
+- D'une implémentation optimisée de la backpropagation
+- De nombreuses opérations implémentées
+- De la prise en charge du GPU pour toutes ces opérations
+
+Au delà des réseaux de neurones en eux mêmes :
+- Optimiseurs (Adam, RMSProp, ...)
+- Gestion des datasets
+- Outils de visualisation (Tensorboard, ...)
+
+
+
 = Fin de la partie théorique
 
 == Sources
