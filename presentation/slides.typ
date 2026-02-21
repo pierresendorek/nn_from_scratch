@@ -358,7 +358,7 @@ Alors que l'on a des plutôt des tenseurs en Machine Learning
 == Dérivée directionnelle
 #slide[
 
-$f: bb(R)^n times bb(R)^m  -> bb(R)^k$ est une fonction de deux vecteurs :
+$f: bb(R)^n times bb(R)^m  -> bb(R)^k$ est une *fonction de deux vecteurs* :
 
 $ x, y mapsto f(x,y) $
 
@@ -404,7 +404,7 @@ $ f(x + epsilon) approx f(x) + partial f(x).epsilon $
 
 #uncover((beginning:2))[
 - Rester à un niveau d'abstraction tenseurs/matrices/vecteurs sans se noyer dans les indices\ 
-- Manier des tenseurs sans avoir à reshape en vecteur\
+- Manier des tenseurs directement, sans avoir à reshape en vecteur\
 $=>$ Gain en lisibilité et en clarté.
 ]
 ]
