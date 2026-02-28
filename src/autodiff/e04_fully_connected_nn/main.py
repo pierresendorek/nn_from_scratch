@@ -8,10 +8,15 @@ import numpy as np
 
 
 class Op:
-    def eval(self):
+    name = "Op"
+
+    def eval(self) -> np.ndarray | float:
         raise NotImplementedError("Subclasses should implement this method.")
 
-    def diff(self, wrt: Variable, direction: Variable) -> Op:
+    def diff(self, wrt: Variable, direction: Variable) -> "Op":
+        raise NotImplementedError("Subclasses should implement this method.")
+
+    def collect_gradient(self) -> defaultdict:
         raise NotImplementedError("Subclasses should implement this method.")
 
     def __add__(self, other: "Op"):
@@ -27,17 +32,6 @@ class Op:
         return Sub(self, other)
 
 
-class ConstantZero(Op):
-    def __init__(self):
-        pass
-
-    def __repr__(self):
-        return "0"
-
-    def eval(self):
-        return 0.0
-
-
 class Variable(Op):
     def __init__(self, name: str, value: np.ndarray):
         self.name = name
@@ -46,14 +40,14 @@ class Variable(Op):
     def __repr__(self):
         return self.name
 
-    def eval(self, perturbed_variable=None):
+    def eval(self):
         return self.value
 
     def diff(self, wrt: Variable, direction: Variable) -> Op:
         if self == wrt:
             return direction
         else:
-            return ConstantZero()
+            return Variable(name="zero", value=np.zeros_like(self.value))
 
 
 class Add(Op):
@@ -68,11 +62,11 @@ class Add(Op):
         left_diff = self.left.diff(wrt, direction)
         right_diff = self.right.diff(wrt, direction)
 
-        if isinstance(left_diff, ConstantZero) and isinstance(right_diff, ConstantZero):
-            return ConstantZero()
-        if isinstance(left_diff, ConstantZero):
+        if left_diff.name == "zero" and right_diff.name == "zero":
+            return Variable(name="zero", value=np.zeros_like(wrt.value))
+        if left_diff.name == "zero":
             return right_diff
-        if isinstance(right_diff, ConstantZero):
+        if right_diff.name == "zero":
             return left_diff
 
         return Add(left_diff, right_diff)
@@ -138,14 +132,12 @@ class Bilinear(Op):
 
         if isinstance(left_eval, float) or isinstance(right_eval, float):
             return left_eval * right_eval
-
         return self.operation(left_eval, right_eval)
 
     def diff(self, wrt: Variable, direction: Variable) -> Op:
         left_diff = self.left.diff(wrt, direction)
         right_diff = self.right.diff(wrt, direction)
 
-        ## Simplification rules (optional)
         # if isinstance(left_diff, ConstantZero) and isinstance(right_diff, ConstantZero):
         #     return ConstantZero()
 
@@ -203,10 +195,69 @@ class MatMul(Bilinear):
         )
 
 
+class Tanh(Op):
+    def __init__(self, arg: Op):
+        self.arg = arg
+
+    def eval(self, perturbed_variable=None):
+        arg = self.arg.eval()
+        e = np.exp(2 * arg)
+        return (e - 1) / (e + 1)
+
+    def diff(self, wrt: Variable, direction: Variable) -> Op:
+        return Sech2(self.arg) * self.arg.diff(wrt, direction)
+
+    def __repr__(self):
+        return f"Tanh({self.arg})"
+
+
+class Sech2(Op):
+    def __init__(self, arg: Op):
+        self.arg = arg
+
+    def eval(self):
+        arg = self.arg.eval()
+        e_pos = np.exp(arg)
+        e_neg = np.exp(-arg)
+        return 4 / (e_pos + e_neg)
+
+    def __repr__(self):
+        return f"Sech2({self.arg})"
+
+    # diff is purposedly undefined, but can be implemented if needed
+
+
+def fully_connected(input: Op, weight: Op, bias: Op) -> Op:
+    """_summary_
+
+    Args:
+        input (Op): tensor with shape (batch_size, nb_channels_input)
+        weight (Op): tensor with shape (nb_channels_input, nb_channels_output)
+        bias (Op): tensor with shape (1, nb_channels_output)
+
+    Returns:
+        Op: tensor with shape (batch_size, nb_channels_output)
+    """
+    return MatMul(input, weight) + bias
+
+
 def square(x: Op) -> Op:
     return Mul(x, x)
 
 
+# # class Div(Op):
+# #     def __init__(self, numerator, denominator):
+# #         self.numerator = numerator
+# #         self.denominator = denominator
+
+# #     def __repr__(self):
+# #         return f"({self.numerator})/({self.denominator})"
+
+# #     def eval(self, perturbed_variable=None):
+# #         return self.numerator.eval(perturbed_variable) / self.numerator.eval(perturbed_variable)
+
+# #     def diff(self, perturbed_variable):
+# #         return super().diff()
 
 if __name__ == "__main__":
     a = Variable(name="a", value=np.random.randn(3, 2))
@@ -222,5 +273,3 @@ if __name__ == "__main__":
             direction=Variable(name="delta_a", value=np.ones((3, 2))),
         )
     )
-
-    print(expr.eval())
